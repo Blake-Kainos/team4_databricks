@@ -78,7 +78,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: >-
-            --file=requirements-dev.txt
+            --file=requirements.txt
             --package-manager=pip
             --severity-threshold=high
             --sarif-file-output=snyk-results.sarif
