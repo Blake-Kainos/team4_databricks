@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run Black
+        run: black --check src
+
+      - name: Run flake8
+        run: flake8 src
+
+      - name: Run mypy
+        run: mypy src
+
+      - name: Run detect-secrets
+        run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
+
+  gitleaks:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  snyk:
+    name: Vulnerability Scanning (Snyk)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+
+      - name: Run Snyk
+        uses: snyk/actions/python@9adf32b1121593767fc3c057af55b55db032dc04 # master (2025-10-08)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: >-
+            --file=requirements.txt
+            --package-manager=pip
+            --severity-threshold=high
+            --sarif-file-output=snyk-results.sarif
+
+      - name: Check Snyk SARIF output
+        id: snyk_sarif
+        run: |
+          if [ -f snyk-results.sarif ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload Snyk results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && steps.snyk_sarif.outputs.exists == 'true' }}
+        with:
+          sarif_file: snyk-results.sarif

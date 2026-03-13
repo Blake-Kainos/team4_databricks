@@ -1,0 +1,7 @@
+black==26.3.1
+detect-secrets==1.5.0
+flake8==7.3.0
+mypy==1.19.1
+pandas-stubs==3.0.0.260204
+pre-commit==4.2.0
+types-requests==2.32.4.20260107
