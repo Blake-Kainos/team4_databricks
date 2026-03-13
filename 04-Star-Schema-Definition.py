@@ -59,8 +59,8 @@ dim_location_schema = StructType([
     StructField("city",          StringType(),  nullable=False),
     StructField("state",         StringType(),  nullable=False),
     StructField("zip",           IntegerType(), nullable=False),
-    StructField("latitude",      DoubleType(),  nullable=True),
-    StructField("longitude",     DoubleType(),  nullable=True),
+    StructField("latitude",      DoubleType(),  nullable=False),
+    StructField("longitude",     DoubleType(),  nullable=False),
 ])
 
 print("dim_location:", dim_location_schema.simpleString())
