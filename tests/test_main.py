@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 import pandas as pd
+import pytest
 
 from src.main import fetch_inspections
 
@@ -53,8 +54,5 @@ def test_fetch_inspections_raises_for_http_errors() -> None:
     mock_response.raise_for_status.side_effect = RuntimeError("boom")
 
     with patch("src.main.requests.get", return_value=mock_response):
-        try:
+        with pytest.raises(RuntimeError, match="boom"):
             fetch_inspections()
-            assert False, "Expected RuntimeError"
-        except RuntimeError as exc:
-            assert str(exc) == "boom"
