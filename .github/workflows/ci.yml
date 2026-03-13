@@ -36,6 +36,9 @@ jobs:
       - name: Run mypy
         run: mypy src
 
+      - name: Run pytest
+        run: PYTHONPATH=. pytest -q
+
       - name: Run detect-secrets
         run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
 
