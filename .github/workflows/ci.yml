@@ -37,7 +37,7 @@ jobs:
         run: mypy src
 
       - name: Run detect-secrets
-        run: detect-secrets-hook --baseline .secrets.baseline src
+        run: detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
 
   gitleaks:
     name: Secret Scanning (Gitleaks)
@@ -57,6 +57,7 @@ jobs:
   snyk:
     name: Vulnerability Scanning (Snyk)
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       security-events: write
@@ -72,14 +73,27 @@ jobs:
           python-version: "3.14"
 
       - name: Run Snyk
-        uses: snyk/actions/python@master
+        uses: snyk/actions/python@9adf32b1121593767fc3c057af55b55db032dc04 # master (2025-10-08)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --sarif-file-output=snyk-results.sarif
+          args: >-
+            --file=requirements-dev.txt
+            --package-manager=pip
+            --severity-threshold=high
+            --sarif-file-output=snyk-results.sarif
+
+      - name: Check Snyk SARIF output
+        id: snyk_sarif
+        run: |
+          if [ -f snyk-results.sarif ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload Snyk results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && steps.snyk_sarif.outputs.exists == 'true' }}
         with:
           sarif_file: snyk-results.sarif
