@@ -12,10 +12,10 @@ brew install gitleaks   # macOS
 
 ### Install dependencies
 
-Install development dependencies:
+Install runtime and development dependencies:
 
 ```bash
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 ### Enable pre-commit hooks
@@ -33,4 +33,5 @@ pre-commit run --all-files
 black src
 flake8 src
 mypy src
+pytest -q
 ```
